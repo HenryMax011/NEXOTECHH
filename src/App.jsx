@@ -6,14 +6,13 @@ import {
   ArrowRight,
   ArrowUpRight,
   Blocks,
-  Menu,
+  Home,
   MousePointer2,
   MoveUpRight,
   PenTool,
   ShoppingBag,
   Sparkles,
   Target,
-  X,
   Zap,
 } from 'lucide-react'
 import campaignNexo from './assets/campaign-nexo.webp'
@@ -38,8 +37,6 @@ const projects = [
   { name: 'Pulso', type: 'Saúde & Fitness', color: '#38e1ff', tagline: 'Movimento vira hábito.', theme: 'violet' },
 ]
 
-const STUDIO_FRAME_COUNT = 144
-const STUDIO_SEQUENCE_VERSION = 7
 const narrativeChapters = [
   ['01', 'Toda grande presença começa com uma ideia.', 'IMAGINAR'],
   ['02', 'Estratégia transforma intenção em direção.', 'ESTRUTURAR'],
@@ -47,7 +44,10 @@ const narrativeChapters = [
   ['04', 'Uma experiência pronta para ganhar o mundo.', 'LANÇAR'],
 ]
 
-function CinematicStudioScene({ progress }) {
+const DESK_FRAME_COUNT = 240
+const DESK_SEQUENCE_VERSION = 1
+
+function CinematicDeskScene({ progress }) {
   const canvasRef = useRef(null)
   const framesRef = useRef([])
   const currentFrameRef = useRef(0)
@@ -56,12 +56,13 @@ function CinematicStudioScene({ progress }) {
   const drawFrame = (index) => {
     const canvas = canvasRef.current
     const image = framesRef.current[index]
-    if (!canvas || !image?.complete) return
+    if (!canvas || !image?.complete || !image.naturalWidth) return
 
     const rect = canvas.getBoundingClientRect()
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
     const width = Math.round(rect.width * dpr)
     const height = Math.round(rect.height * dpr)
+    if (!width || !height) return
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width
       canvas.height = height
@@ -79,17 +80,16 @@ function CinematicStudioScene({ progress }) {
 
   useEffect(() => {
     let active = true
-    const frames = Array.from({ length: STUDIO_FRAME_COUNT }, (_, index) => {
+    framesRef.current = Array.from({ length: DESK_FRAME_COUNT }, (_, index) => {
       const image = new Image()
-      image.src = `/frames/studio/frame-${String(index + 1).padStart(3, '0')}.webp?v=${STUDIO_SEQUENCE_VERSION}`
+      image.src = `/frames/desk/frame-${String(index + 1).padStart(3, '0')}.webp?v=${DESK_SEQUENCE_VERSION}`
       image.onload = () => {
         if (!active) return
-        setLoaded((value) => Math.min(value + 1, STUDIO_FRAME_COUNT))
+        setLoaded((value) => Math.min(value + 1, DESK_FRAME_COUNT))
         if (index === 0 || index === currentFrameRef.current) drawFrame(index)
       }
       return image
     })
-    framesRef.current = frames
 
     const onResize = () => drawFrame(currentFrameRef.current)
     window.addEventListener('resize', onResize)
@@ -100,32 +100,25 @@ function CinematicStudioScene({ progress }) {
   }, [])
 
   useMotionValueEvent(progress, 'change', (latest) => {
-    const nextFrame = Math.min(STUDIO_FRAME_COUNT - 1, Math.round(latest * (STUDIO_FRAME_COUNT - 1)))
+    const nextFrame = Math.min(DESK_FRAME_COUNT - 1, Math.round(latest * (DESK_FRAME_COUNT - 1)))
     if (nextFrame === currentFrameRef.current) return
     currentFrameRef.current = nextFrame
     requestAnimationFrame(() => drawFrame(nextFrame))
   })
 
   return (
-    <div className="studio-film">
-      <div className="studio-film-frame">
-        <canvas ref={canvasRef} aria-label="Profissionais criando experiências digitais em um estúdio" />
-        <div className="film-light-leak" />
-        <div className="film-scanline" />
-        <div className="film-vignette" />
-        <div className="film-grain" />
-        <div className={`frame-loader ${loaded === STUDIO_FRAME_COUNT ? 'complete' : ''}`}>
-          <span style={{ width: `${(loaded / STUDIO_FRAME_COUNT) * 100}%` }} />
-        </div>
-      </div>
-      <div className="film-interface">
-        <span><i className="record-dot" /> REC</span>
-        <span>00:12:08:21</span>
-      </div>
-      <div className="film-caption">
-        <span>NEXO TECHH — BEHIND THE PIXELS</span>
-        <strong>Crafting digital<br />experiences.</strong>
-        <small>35MM / F2.0 / 24FPS</small>
+    <div className="desk-film">
+      <canvas
+        ref={canvasRef}
+        className="desk-film-canvas"
+        aria-label="Desenvolvedor digitando código em um teclado, filmado à noite"
+      />
+      <div className="film-light-leak" />
+      <div className="film-scanline" />
+      <div className="film-vignette" />
+      <div className="film-grain" />
+      <div className={`frame-loader ${loaded === DESK_FRAME_COUNT ? 'complete' : ''}`}>
+        <span style={{ width: `${(loaded / DESK_FRAME_COUNT) * 100}%` }} />
       </div>
     </div>
   )
@@ -399,8 +392,121 @@ function WorkCarousel() {
   )
 }
 
+const navItems = [
+  { href: '#inicio', label: 'Início', icon: Home },
+  { href: '#sobre', label: 'Sobre', icon: Sparkles },
+  { href: '#servicos', label: 'Serviços', icon: Blocks },
+  { href: '#projetos', label: 'Projetos', icon: PenTool },
+  { href: '#processo', label: 'Processo', icon: Zap },
+  { href: '#contato', label: 'Contato', icon: ArrowUpRight, accent: true },
+]
+
+function navLinePath(cx, width, height) {
+  const y = height - 3
+  const inset = 18
+  const half = 40
+  const left = Math.max(inset + 2, cx - half)
+  const right = Math.min(width - inset - 2, cx + half)
+  const top = 15
+  return [
+    `M ${inset} ${y}`,
+    `L ${left} ${y}`,
+    `C ${left + 10} ${y} ${left} ${top} ${left + 20} ${top}`,
+    `L ${right - 20} ${top}`,
+    `C ${right} ${top} ${right - 10} ${y} ${right} ${y}`,
+    `L ${width - inset} ${y}`,
+  ].join(' ')
+}
+
+function SiteHeader() {
+  const pillRef = useRef(null)
+  const itemRefs = useRef([])
+  const [active, setActive] = useState(0)
+  const [hover, setHover] = useState(null)
+  const [pillSize, setPillSize] = useState({ w: 520, h: 72 })
+  const current = hover ?? active
+  const cx = useSpring(80, { stiffness: 320, damping: 28, mass: 0.6 })
+  const pathD = useTransform(cx, (x) => navLinePath(x, pillSize.w, pillSize.h))
+  const peakY = 15
+
+  const measure = (index) => {
+    const pill = pillRef.current
+    const item = itemRefs.current[index]
+    if (!pill || !item) return
+    const pillBox = pill.getBoundingClientRect()
+    const itemBox = item.getBoundingClientRect()
+    setPillSize({ w: pillBox.width, h: pillBox.height })
+    cx.set(itemBox.left - pillBox.left + itemBox.width / 2)
+  }
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => measure(current))
+    return () => cancelAnimationFrame(id)
+  }, [current])
+
+  useEffect(() => {
+    const ids = navItems.map((item) => item.href.slice(1))
+    const onScroll = () => {
+      let next = 0
+      ids.forEach((id, i) => {
+        const section = document.getElementById(id)
+        if (section && section.getBoundingClientRect().top < window.innerHeight * 0.42) next = i
+      })
+      setActive((prev) => (prev === next ? prev : next))
+    }
+    const onResize = () => measure(hover ?? active)
+    const ro = new ResizeObserver(() => measure(hover ?? active))
+    if (pillRef.current) ro.observe(pillRef.current)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onResize)
+    onScroll()
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [hover, active])
+
+  return (
+    <header className="nav">
+      <nav ref={pillRef} className="nav-pill" onMouseLeave={() => setHover(null)}>
+        <svg className="nav-line" aria-hidden="true">
+          <defs>
+            <filter id="nav-glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <motion.path d={pathD} fill="none" stroke="#b8ff37" strokeWidth="2.4" strokeLinecap="round" />
+          <motion.circle cx={cx} cy={peakY} r="4.5" fill="#b8ff37" filter="url(#nav-glow)" />
+        </svg>
+        {navItems.map((item, index) => {
+          const Icon = item.icon
+          const on = index === current
+          return (
+            <a
+              key={item.href}
+              ref={(node) => { itemRefs.current[index] = node }}
+              href={item.href}
+              className={`nav-item${item.accent ? ' accent' : ''}${on ? ' on' : ''}`}
+              onMouseEnter={() => setHover(index)}
+              onFocus={() => setHover(index)}
+              onClick={() => setActive(index)}
+            >
+              <Icon size={18} strokeWidth={1.8} />
+              <span>{item.label}</span>
+            </a>
+          )
+        })}
+      </nav>
+    </header>
+  )
+}
+
 function App() {
-  const [menuOpen, setMenuOpen] = useState(false)
   const heroRef = useRef(null)
   const { scrollYProgress } = useScroll()
   const { scrollYProgress: heroProgress } = useScroll({
@@ -410,35 +516,23 @@ function App() {
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 90, damping: 24 })
   const heroY = useTransform(scrollYProgress, [0, 0.18], [0, 150])
   const heroOpacity = useTransform(scrollYProgress, [0, 0.16], [1, 0])
-  const filmProgress = useTransform(heroProgress, [0, 0.66], [0, 1])
-  const heroStageScale = useTransform(heroProgress, [0.66, 1], [1, 0.96])
-  const heroVeilOpacity = useTransform(heroProgress, [0.66, 0.96], [0, 0.68])
+  const filmProgress = useTransform(heroProgress, [0, 0.82], [0, 1])
+  const heroStageScale = useTransform(heroProgress, [0.82, 1], [1, 0.96])
+  const heroVeilOpacity = useTransform(heroProgress, [0.82, 0.98], [0, 0.68])
 
   return (
     <div className="site-shell">
       <motion.div className="scroll-progress" style={{ scaleX: smoothProgress }} />
 
-      <header className="nav">
-        <a className="brand" href="#inicio" aria-label="Nexo Techh — início">
-          <img className="brand-word" src={wordmark} alt="NEXOTECHH" />
-        </a>
-        <nav className={menuOpen ? 'open' : ''}>
-          <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre</a>
-          <a href="#servicos" onClick={() => setMenuOpen(false)}>Serviços</a>
-          <a href="#projetos" onClick={() => setMenuOpen(false)}>Projetos</a>
-          <a href="#processo" onClick={() => setMenuOpen(false)}>Processo</a>
-        </nav>
-        <a href="#contato" className="nav-cta">Vamos conversar <ArrowUpRight size={15} /></a>
-        <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu">
-          {menuOpen ? <X /> : <Menu />}
-        </button>
-      </header>
+      <SiteHeader />
 
       <main>
         <section className="hero-section" id="inicio" ref={heroRef}>
           <div className="hero-sticky">
+            <a className="hero-brand" href="#inicio" aria-label="Nexo Techh — início">
+              <img className="brand-word" src={wordmark} alt="NEXOTECHH" />
+            </a>
             <motion.div className="hero-stage" style={{ scale: heroStageScale }}>
-            <div className="hero-grid" />
             <motion.div className="hero-copy" style={{ y: heroY, opacity: heroOpacity }}>
             <motion.div
               className="eyebrow"
@@ -468,7 +562,7 @@ function App() {
             </motion.div>
             </motion.div>
             <div className="hero-canvas">
-              <CinematicStudioScene progress={filmProgress} />
+              <CinematicDeskScene progress={filmProgress} />
             </div>
             <ScrollNarrative progress={filmProgress} />
             <div className="scroll-hint"><span>ROLE PARA CONTROLAR O FILME</span><i /></div>
